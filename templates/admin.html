@@ -107,7 +107,13 @@
                 <div class="list-group">
                     {% for joke in jokes[-5:]|reverse %}
                     <div class="list-group-item">
-                        <h6 class="mb-1">{{ joke.category.name }}</h6>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-1">{{ joke.category.name }}</h6>
+                            <span class="badge bg-primary">
+                                {{ "%.1f"|format(joke.rating) }} ⭐
+                                ({{ joke.times_sent }} ratings)
+                            </span>
+                        </div>
                         <p class="mb-1">{{ joke.content }}</p>
                         <small class="text-muted">Added: {{ joke.created_at.strftime('%Y-%m-%d') }}</small>
                     </div>

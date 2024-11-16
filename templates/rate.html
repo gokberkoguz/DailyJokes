@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+        <div class="joke-bubble">
+            {% if success %}
+            <h2>Thank You! 🌟</h2>
+            <p>Your rating has been recorded. Thanks for helping us improve our jokes!</p>
+            {% else %}
+            <h2>Oops! 😕</h2>
+            <p>Something went wrong while recording your rating. Please try again.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

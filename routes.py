@@ -42,6 +42,23 @@ def subscribe():
     flash('Successfully subscribed!', 'success')
     return redirect(url_for('main.index'))
 
+@main_bp.route('/rate/<int:joke_id>/<int:rating>')
+def rate_joke(joke_id, rating):
+    if not 1 <= rating <= 5:
+        flash('Invalid rating value!', 'error')
+        return render_template('rate.html', success=False)
+    
+    joke = Joke.query.get_or_404(joke_id)
+    # Update the joke's rating using weighted average
+    if joke.times_sent == 0:
+        joke.rating = float(rating)
+    else:
+        joke.rating = (joke.rating * joke.times_sent + rating) / (joke.times_sent + 1)
+    joke.times_sent += 1
+    db.session.commit()
+    
+    return render_template('rate.html', success=True)
+
 @main_bp.route('/unsubscribe/<email>')
 def unsubscribe(email):
     subscriber = Subscriber.query.filter_by(email=email).first()
@@ -68,7 +85,7 @@ def admin_login():
 @main_bp.route('/admin/dashboard')
 @login_required
 def admin_dashboard():
-    jokes = Joke.query.all()
+    jokes = Joke.query.order_by(Joke.created_at.desc()).all()
     subscribers = Subscriber.query.filter_by(is_active=True).all()
     categories = Category.query.all()
     return render_template('admin.html', section='dashboard', 

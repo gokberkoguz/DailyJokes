@@ -21,5 +21,6 @@ def send_daily_joke(subscriber, joke):
     msg.html = render_template('email/daily_joke.html',
                              content=joke.content,
                              is_welcome=False,
-                             email=subscriber.email)
+                             email=subscriber.email,
+                             joke=joke)
     mail.send(msg)
