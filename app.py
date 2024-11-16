@@ -5,6 +5,9 @@ from flask_login import LoginManager
 from flask_mail import Mail
 from flask_apscheduler import APScheduler
 from sqlalchemy.orm import DeclarativeBase
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class Base(DeclarativeBase):
     pass
@@ -48,7 +51,6 @@ def create_app():
     with app.app_context():
         from models import Admin, Subscriber, Joke
         db.create_all()
-
         # Create default admin if not exists
         if not Admin.query.first():
             admin = Admin(username='admin')

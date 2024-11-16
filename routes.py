@@ -5,16 +5,19 @@ from email_service import send_welcome_email
 from sqlalchemy import func, case, extract
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
-from utils.ai_utils import generate_joke
+from utils.ai_utils import generate_bulk_jokes
 from openai import OpenAIError, RateLimitError, APIError, APIConnectionError
 import logging
 import json
+from scheduler import send_minutely_jokes
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 main_bp = Blueprint('main', __name__)
+
+
 
 @main_bp.route('/')
 def index():
@@ -217,16 +220,17 @@ def generate_ai_joke():
         logger.info(f"Attempting to generate joke for category: {category.name}")
         
         # Generate joke using OpenAI
-        generated_content = generate_joke(category.name)
+        generated_content = generate_bulk_jokes(category.name)
         
         if generated_content:
             # Save the generated joke
-            joke = Joke(
-                content=generated_content,
-                category_id=category_id
-            )
-            db.session.add(joke)
-            db.session.commit()
+            for content in generated_content:
+                joke = Joke(
+                    content=content,
+                    category_id=category_id
+                )
+                db.session.add(joke)
+                db.session.commit()
             
             logger.info(f"Successfully generated and saved joke for category: {category.name}")
             flash('AI joke generated and added successfully!', 'success')
@@ -299,3 +303,13 @@ def toggle_category(id):
     except Exception:
         db.session.rollback()
         return jsonify({'status': 'error'}), 500
+
+
+@main_bp.route('/test', methods=['GET'])
+def trigger_task():
+    """Endpoint to manually trigger the task."""
+    try:
+        send_minutely_jokes()
+        return jsonify({"status": "Task executed successfully"})
+    except Exception as e:
+        return jsonify({"status": "Task execution failed", "error": str(e)}), 500
