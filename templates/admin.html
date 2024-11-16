@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if section == 'login' %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">Admin Login</h2>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-comic w-100">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3 class="card-title">Add New Joke</h3>
+                <form action="{{ url_for('main.admin_jokes') }}" method="POST">
+                    <div class="mb-3">
+                        <label for="jokeContent" class="form-label">Joke Content</label>
+                        <textarea class="form-control" id="jokeContent" name="content" rows="3" maxlength="500" required></textarea>
+                        <small id="charCounter" class="text-muted">0/500</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Category</label>
+                        <select class="form-select" id="category" name="category" required>
+                            <option value="general">General</option>
+                            <option value="puns">Puns</option>
+                            <option value="dad_jokes">Dad Jokes</option>
+                            <option value="knock_knock">Knock Knock</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-comic">Add Joke</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">Statistics</h3>
+                <p>Total Subscribers: {{ subscribers|length }}</p>
+                <p>Total Jokes: {{ jokes|length }}</p>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-body">
+                <h3 class="card-title">Recent Jokes</h3>
+                <div class="list-group">
+                    {% for joke in jokes[-5:]|reverse %}
+                    <div class="list-group-item">
+                        <h6 class="mb-1">{{ joke.category }}</h6>
+                        <p class="mb-1">{{ joke.content }}</p>
+                        <small class="text-muted">Added: {{ joke.created_at.strftime('%Y-%m-%d') }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

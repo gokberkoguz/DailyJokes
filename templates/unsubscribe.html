@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+        <div class="joke-bubble">
+            <h2>We're Sad to See You Go! 😢</h2>
+            <p>You have been successfully unsubscribed from our daily jokes.</p>
+            <p>If you change your mind, you can always subscribe again!</p>
+            <a href="{{ url_for('main.index') }}" class="btn btn-comic mt-3">Back to Home</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

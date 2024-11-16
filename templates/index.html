@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="joke-bubble text-center">
+            <h1 class="display-4">Get Your Daily Dose of Laughter! 😄</h1>
+            <p class="lead">Subscribe to receive hilarious jokes every day!</p>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-body">
+                <form id="subscribeForm" action="{{ url_for('main.subscribe') }}" method="POST">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email address</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <p class="mb-2">Choose your joke categories:</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for category in ['general', 'puns', 'dad_jokes', 'knock_knock'] %}
+                            <div>
+                                <input type="checkbox" class="category-checkbox" id="{{ category }}" name="categories" value="{{ category }}" 
+                                       {% if category == 'general' %}checked{% endif %}>
+                                <label class="category-label" for="{{ category }}">
+                                    {{ category.replace('_', ' ').title() }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-comic w-100">Subscribe Now!</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
