@@ -6,7 +6,13 @@ from sqlalchemy import func, case, extract
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 from utils.ai_utils import generate_joke
+from openai import OpenAIError, RateLimitError, APIError, APIConnectionError
+import logging
 import json
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 main_bp = Blueprint('main', __name__)
 
@@ -198,24 +204,65 @@ def admin_jokes():
 @main_bp.route('/admin/generate-joke', methods=['POST'])
 @login_required
 def generate_ai_joke():
+    """
+    Generate a joke using OpenAI API and save it to the database
+    """
     try:
         category_id = request.form.get('category_id')
+        if not category_id:
+            flash('Category ID is required.', 'error')
+            return redirect(url_for('main.admin_dashboard'))
+
         category = Category.query.get_or_404(category_id)
+        logger.info(f"Attempting to generate joke for category: {category.name}")
         
         # Generate joke using OpenAI
         generated_content = generate_joke(category.name)
         
         if generated_content:
-            joke = Joke(content=generated_content, category_id=category_id)
+            # Save the generated joke
+            joke = Joke(
+                content=generated_content,
+                category_id=category_id
+            )
             db.session.add(joke)
             db.session.commit()
+            
+            logger.info(f"Successfully generated and saved joke for category: {category.name}")
             flash('AI joke generated and added successfully!', 'success')
         else:
-            flash('Failed to generate joke. Please try again.', 'error')
+            logger.error("Failed to generate joke content")
+            flash('Failed to generate joke. The AI service might be temporarily unavailable.', 'error')
             
-    except Exception as e:
+    except RateLimitError:
+        logger.error("OpenAI rate limit exceeded")
+        flash('Rate limit exceeded. Please try again in a few minutes.', 'error')
         db.session.rollback()
-        flash('An error occurred while generating the joke.', 'error')
+    
+    except APIConnectionError:
+        logger.error("Failed to connect to OpenAI API")
+        flash('Unable to connect to the AI service. Please check your internet connection.', 'error')
+        db.session.rollback()
+    
+    except APIError:
+        logger.error("OpenAI API error occurred")
+        flash('An error occurred with the AI service. Please try again later.', 'error')
+        db.session.rollback()
+    
+    except OpenAIError as e:
+        logger.error(f"OpenAI error: {str(e)}")
+        flash('An error occurred while generating the joke. Please try again.', 'error')
+        db.session.rollback()
+    
+    except IntegrityError:
+        logger.error("Database integrity error")
+        flash('Failed to save the generated joke due to a database error.', 'error')
+        db.session.rollback()
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in generate_ai_joke: {str(e)}")
+        flash('An unexpected error occurred. Please try again later.', 'error')
+        db.session.rollback()
     
     return redirect(url_for('main.admin_dashboard'))
 
