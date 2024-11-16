@@ -2,6 +2,8 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from flask_login import login_required, login_user, logout_user
 from models import db, Admin, Subscriber, Joke, Category
 from email_service import send_welcome_email
+from sqlalchemy import func, case, extract
+from datetime import datetime, timedelta
 import json
 
 main_bp = Blueprint('main', __name__)
@@ -49,7 +51,6 @@ def rate_joke(joke_id, rating):
         return render_template('rate.html', success=False)
     
     joke = Joke.query.get_or_404(joke_id)
-    # Update the joke's rating using weighted average
     if joke.times_sent == 0:
         joke.rating = float(rating)
     else:
@@ -91,6 +92,63 @@ def admin_dashboard():
     return render_template('admin.html', section='dashboard', 
                          jokes=jokes, subscribers=subscribers, 
                          categories=categories)
+
+@main_bp.route('/admin/analytics')
+@login_required
+def admin_analytics():
+    # Get basic stats
+    total_subscribers = Subscriber.query.count()
+    active_subscribers = Subscriber.query.filter_by(is_active=True).count()
+    average_rating = db.session.query(func.avg(Joke.rating)).scalar() or 0
+
+    # Get subscriber growth data (last 30 days)
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    growth_query = db.session.query(
+        func.date(Subscriber.subscribed_at).label('date'),
+        func.count().label('count')
+    ).filter(
+        Subscriber.subscribed_at >= thirty_days_ago
+    ).group_by(
+        func.date(Subscriber.subscribed_at)
+    ).order_by(
+        func.date(Subscriber.subscribed_at)
+    ).all()
+
+    dates = [(thirty_days_ago + timedelta(days=x)).strftime('%Y-%m-%d') 
+             for x in range(31)]
+    growth_data = [0] * 31
+    for date, count in growth_query:
+        day_index = (date - thirty_days_ago.date()).days
+        growth_data[day_index] = count
+
+    # Get category preferences
+    category_preferences = {}
+    subscribers = Subscriber.query.filter_by(is_active=True).all()
+    for subscriber in subscribers:
+        for category in subscriber.preferences.get('categories', []):
+            category_preferences[category] = category_preferences.get(category, 0) + 1
+
+    category_names = list(category_preferences.keys())
+    category_counts = [category_preferences[name] for name in category_names]
+
+    # Get ratings distribution
+    ratings_distribution = []
+    for rating in range(1, 6):
+        count = Joke.query.filter(
+            Joke.rating >= rating - 0.5,
+            Joke.rating < rating + 0.5
+        ).count()
+        ratings_distribution.append(count)
+
+    return render_template('analytics.html',
+                         total_subscribers=total_subscribers,
+                         active_subscribers=active_subscribers,
+                         average_rating=average_rating,
+                         dates=dates,
+                         growth_data=growth_data,
+                         category_names=category_names,
+                         category_counts=category_counts,
+                         ratings_distribution=ratings_distribution)
 
 @main_bp.route('/admin/jokes', methods=['POST'])
 @login_required

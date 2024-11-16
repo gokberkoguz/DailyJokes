@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">Subscriber Analytics Dashboard</h3>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h5>Total Subscribers</h5>
+                                <h2>{{ total_subscribers }}</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h5>Active Subscribers</h5>
+                                <h2>{{ active_subscribers }}</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h5>Average Joke Rating</h5>
+                                <h2>{{ "%.2f"|format(average_rating) }} ⭐</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h4>Subscriber Growth</h4>
+                <canvas id="growthChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h4>Category Preferences</h4>
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h4>Joke Ratings Distribution</h4>
+                <canvas id="ratingsChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Growth Chart
+    new Chart(document.getElementById('growthChart'), {
+        type: 'line',
+        data: {
+            labels: {{ dates|tojson }},
+            datasets: [{
+                label: 'New Subscribers',
+                data: {{ growth_data|tojson }},
+                borderColor: '#FF6B6B',
+                tension: 0.1
+            }]
+        }
+    });
+
+    // Category Preferences Chart
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'pie',
+        data: {
+            labels: {{ category_names|tojson }},
+            datasets: [{
+                data: {{ category_counts|tojson }},
+                backgroundColor: [
+                    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD'
+                ]
+            }]
+        }
+    });
+
+    // Ratings Distribution Chart
+    new Chart(document.getElementById('ratingsChart'), {
+        type: 'bar',
+        data: {
+            labels: ['1 ⭐', '2 ⭐', '3 ⭐', '4 ⭐', '5 ⭐'],
+            datasets: [{
+                label: 'Number of Ratings',
+                data: {{ ratings_distribution|tojson }},
+                backgroundColor: '#4ECDC4'
+            }]
+        }
+    });
+</script>
+{% endblock %}
