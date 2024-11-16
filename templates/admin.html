@@ -24,6 +24,47 @@
 </div>
 {% else %}
 <div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">Category Management</h3>
+                <div class="row">
+                    <div class="col-md-6">
+                        <form action="{{ url_for('main.admin_categories') }}" method="POST">
+                            <div class="mb-3">
+                                <label for="categoryName" class="form-label">Category Name</label>
+                                <input type="text" class="form-control" id="categoryName" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="categoryDescription" class="form-label">Description</label>
+                                <input type="text" class="form-control" id="categoryDescription" name="description">
+                            </div>
+                            <button type="submit" class="btn btn-comic">Add Category</button>
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <h4>Existing Categories</h4>
+                        <div class="list-group">
+                            {% for category in categories %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ category.name }}</h6>
+                                    <small class="text-muted">{{ category.description }}</small>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" 
+                                           data-category-id="{{ category.id }}"
+                                           {% if category.is_active %}checked{% endif %}>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="col-md-6">
         <div class="card mb-4">
             <div class="card-body">
@@ -36,11 +77,12 @@
                     </div>
                     <div class="mb-3">
                         <label for="category" class="form-label">Category</label>
-                        <select class="form-select" id="category" name="category" required>
-                            <option value="general">General</option>
-                            <option value="puns">Puns</option>
-                            <option value="dad_jokes">Dad Jokes</option>
-                            <option value="knock_knock">Knock Knock</option>
+                        <select class="form-select" id="category" name="category_id" required>
+                            {% for category in categories %}
+                            {% if category.is_active %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endif %}
+                            {% endfor %}
                         </select>
                     </div>
                     <button type="submit" class="btn btn-comic">Add Joke</button>
@@ -55,6 +97,7 @@
                 <h3 class="card-title">Statistics</h3>
                 <p>Total Subscribers: {{ subscribers|length }}</p>
                 <p>Total Jokes: {{ jokes|length }}</p>
+                <p>Active Categories: {{ categories|selectattr('is_active')|list|length }}</p>
             </div>
         </div>
         
@@ -64,7 +107,7 @@
                 <div class="list-group">
                     {% for joke in jokes[-5:]|reverse %}
                     <div class="list-group-item">
-                        <h6 class="mb-1">{{ joke.category }}</h6>
+                        <h6 class="mb-1">{{ joke.category.name }}</h6>
                         <p class="mb-1">{{ joke.content }}</p>
                         <small class="text-muted">Added: {{ joke.created_at.strftime('%Y-%m-%d') }}</small>
                     </div>

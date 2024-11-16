@@ -14,16 +14,28 @@ class Admin(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    description = db.Column(db.String(200))
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 class Subscriber(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     subscribed_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
     preferences = db.Column(db.JSON, default=lambda: {"categories": ["general"]})
+    delivery_time = db.Column(db.Time, default=datetime.strptime('09:00', '%H:%M').time())
 
 class Joke(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
-    category = db.Column(db.String(50), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_sent = db.Column(db.DateTime, nullable=True)
+    rating = db.Column(db.Float, default=0.0)
+    times_sent = db.Column(db.Integer, default=0)
+    
+    category = db.relationship('Category', backref=db.backref('jokes', lazy=True))

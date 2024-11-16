@@ -1,6 +1,6 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, login_user, logout_user
-from models import db, Admin, Subscriber, Joke
+from models import db, Admin, Subscriber, Joke, Category
 from email_service import send_welcome_email
 import json
 
@@ -8,7 +8,8 @@ main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
 def index():
-    return render_template('index.html')
+    categories = Category.query.filter_by(is_active=True).all()
+    return render_template('index.html', categories=categories)
 
 @main_bp.route('/subscribe', methods=['POST'])
 def subscribe():
@@ -69,18 +70,44 @@ def admin_login():
 def admin_dashboard():
     jokes = Joke.query.all()
     subscribers = Subscriber.query.filter_by(is_active=True).all()
-    return render_template('admin.html', section='dashboard', jokes=jokes, subscribers=subscribers)
+    categories = Category.query.all()
+    return render_template('admin.html', section='dashboard', 
+                         jokes=jokes, subscribers=subscribers, 
+                         categories=categories)
 
 @main_bp.route('/admin/jokes', methods=['POST'])
 @login_required
 def admin_jokes():
     content = request.form.get('content')
-    category = request.form.get('category')
+    category_id = request.form.get('category_id')
     
-    if content and category:
-        joke = Joke(content=content, category=category)
+    if content and category_id:
+        joke = Joke(content=content, category_id=category_id)
         db.session.add(joke)
         db.session.commit()
         flash('Joke added successfully!', 'success')
     
     return redirect(url_for('main.admin_dashboard'))
+
+@main_bp.route('/admin/categories', methods=['GET', 'POST'])
+@login_required
+def admin_categories():
+    if request.method == 'POST':
+        name = request.form.get('name')
+        description = request.form.get('description')
+        
+        if name:
+            category = Category(name=name, description=description)
+            db.session.add(category)
+            db.session.commit()
+            flash('Category added successfully!', 'success')
+        
+    return redirect(url_for('main.admin_dashboard'))
+
+@main_bp.route('/admin/categories/<int:id>', methods=['POST'])
+@login_required
+def toggle_category(id):
+    category = Category.query.get_or_404(id)
+    category.is_active = not category.is_active
+    db.session.commit()
+    return jsonify({'status': 'success', 'is_active': category.is_active})
