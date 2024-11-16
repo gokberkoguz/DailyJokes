@@ -5,6 +5,7 @@ from email_service import send_welcome_email
 from sqlalchemy import func, case, extract
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
+from utils.ai_utils import generate_joke
 import json
 
 main_bp = Blueprint('main', __name__)
@@ -191,6 +192,30 @@ def admin_jokes():
     except Exception:
         db.session.rollback()
         flash('An error occurred while adding the joke.', 'error')
+    
+    return redirect(url_for('main.admin_dashboard'))
+
+@main_bp.route('/admin/generate-joke', methods=['POST'])
+@login_required
+def generate_ai_joke():
+    try:
+        category_id = request.form.get('category_id')
+        category = Category.query.get_or_404(category_id)
+        
+        # Generate joke using OpenAI
+        generated_content = generate_joke(category.name)
+        
+        if generated_content:
+            joke = Joke(content=generated_content, category_id=category_id)
+            db.session.add(joke)
+            db.session.commit()
+            flash('AI joke generated and added successfully!', 'success')
+        else:
+            flash('Failed to generate joke. Please try again.', 'error')
+            
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while generating the joke.', 'error')
     
     return redirect(url_for('main.admin_dashboard'))
 

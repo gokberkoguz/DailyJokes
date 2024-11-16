@@ -93,6 +93,23 @@
                     </div>
                     <button type="submit" class="btn btn-comic">Add Joke</button>
                 </form>
+
+                <hr>
+                
+                <h4 class="mt-4">Generate AI Joke</h4>
+                <form action="{{ url_for('main.generate_ai_joke') }}" method="POST">
+                    <div class="mb-3">
+                        <label for="ai_category" class="form-label">Category</label>
+                        <select class="form-select" id="ai_category" name="category_id" required>
+                            {% for category in categories %}
+                            {% if category.is_active %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-comic">Generate Joke</button>
+                </form>
             </div>
         </div>
     </div>
