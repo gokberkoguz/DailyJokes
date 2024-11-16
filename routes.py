@@ -3,6 +3,7 @@ from flask_login import login_required, login_user, logout_user
 from models import db, Admin, Subscriber, Joke, Category
 from email_service import send_welcome_email
 from sqlalchemy import func, case, extract
+from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 import json
 
@@ -29,28 +30,37 @@ def subscribe():
         flash('Invalid delivery time format!', 'error')
         return redirect(url_for('main.index'))
     
-    existing = Subscriber.query.filter_by(email=email).first()
-    if existing:
-        if existing.is_active:
-            flash('You are already subscribed!', 'info')
-        else:
-            existing.is_active = True
-            existing.preferences = {'categories': categories}
-            existing.delivery_time = delivery_time
-            db.session.commit()
-            flash('Welcome back! Your subscription has been reactivated.', 'success')
-        return redirect(url_for('main.index'))
+    try:
+        existing = Subscriber.query.filter_by(email=email).first()
+        if existing:
+            if existing.is_active:
+                flash('You are already subscribed!', 'info')
+            else:
+                existing.is_active = True
+                existing.preferences = {'categories': categories}
+                existing.delivery_time = delivery_time
+                db.session.commit()
+                flash('Welcome back! Your subscription has been reactivated.', 'success')
+            return redirect(url_for('main.index'))
+        
+        subscriber = Subscriber(
+            email=email,
+            preferences={'categories': categories or ['general']},
+            delivery_time=delivery_time
+        )
+        db.session.add(subscriber)
+        db.session.commit()
+        
+        send_welcome_email(email)
+        flash('Successfully subscribed!', 'success')
+        
+    except IntegrityError:
+        db.session.rollback()
+        flash('An error occurred while processing your subscription. Please try again.', 'error')
+    except Exception as e:
+        db.session.rollback()
+        flash('An unexpected error occurred. Please try again later.', 'error')
     
-    subscriber = Subscriber(
-        email=email,
-        preferences={'categories': categories or ['general']},
-        delivery_time=delivery_time
-    )
-    db.session.add(subscriber)
-    db.session.commit()
-    
-    send_welcome_email(email)
-    flash('Successfully subscribed!', 'success')
     return redirect(url_for('main.index'))
 
 @main_bp.route('/rate/<int:joke_id>/<int:rating>')
@@ -59,23 +69,30 @@ def rate_joke(joke_id, rating):
         flash('Invalid rating value!', 'error')
         return render_template('rate.html', success=False)
     
-    joke = Joke.query.get_or_404(joke_id)
-    if joke.times_sent == 0:
-        joke.rating = float(rating)
-    else:
-        joke.rating = (joke.rating * joke.times_sent + rating) / (joke.times_sent + 1)
-    joke.times_sent += 1
-    db.session.commit()
-    
-    return render_template('rate.html', success=True)
+    try:
+        joke = Joke.query.get_or_404(joke_id)
+        if joke.times_sent == 0:
+            joke.rating = float(rating)
+        else:
+            joke.rating = (joke.rating * joke.times_sent + rating) / (joke.times_sent + 1)
+        joke.times_sent += 1
+        db.session.commit()
+        return render_template('rate.html', success=True)
+    except Exception:
+        db.session.rollback()
+        return render_template('rate.html', success=False)
 
 @main_bp.route('/unsubscribe/<email>')
 def unsubscribe(email):
-    subscriber = Subscriber.query.filter_by(email=email).first()
-    if subscriber:
-        subscriber.is_active = False
-        db.session.commit()
-        flash('Successfully unsubscribed!', 'success')
+    try:
+        subscriber = Subscriber.query.filter_by(email=email).first()
+        if subscriber:
+            subscriber.is_active = False
+            db.session.commit()
+            flash('Successfully unsubscribed!', 'success')
+    except Exception:
+        db.session.rollback()
+        flash('An error occurred while unsubscribing.', 'error')
     return render_template('unsubscribe.html')
 
 @main_bp.route('/admin/login', methods=['GET', 'POST'])
@@ -162,14 +179,18 @@ def admin_analytics():
 @main_bp.route('/admin/jokes', methods=['POST'])
 @login_required
 def admin_jokes():
-    content = request.form.get('content')
-    category_id = request.form.get('category_id')
-    
-    if content and category_id:
-        joke = Joke(content=content, category_id=category_id)
-        db.session.add(joke)
-        db.session.commit()
-        flash('Joke added successfully!', 'success')
+    try:
+        content = request.form.get('content')
+        category_id = request.form.get('category_id')
+        
+        if content and category_id:
+            joke = Joke(content=content, category_id=category_id)
+            db.session.add(joke)
+            db.session.commit()
+            flash('Joke added successfully!', 'success')
+    except Exception:
+        db.session.rollback()
+        flash('An error occurred while adding the joke.', 'error')
     
     return redirect(url_for('main.admin_dashboard'))
 
@@ -177,21 +198,32 @@ def admin_jokes():
 @login_required
 def admin_categories():
     if request.method == 'POST':
-        name = request.form.get('name')
-        description = request.form.get('description')
-        
-        if name:
-            category = Category(name=name, description=description)
-            db.session.add(category)
-            db.session.commit()
-            flash('Category added successfully!', 'success')
+        try:
+            name = request.form.get('name')
+            description = request.form.get('description')
+            
+            if name:
+                category = Category(name=name, description=description)
+                db.session.add(category)
+                db.session.commit()
+                flash('Category added successfully!', 'success')
+        except IntegrityError:
+            db.session.rollback()
+            flash('A category with this name already exists.', 'error')
+        except Exception:
+            db.session.rollback()
+            flash('An error occurred while adding the category.', 'error')
         
     return redirect(url_for('main.admin_dashboard'))
 
 @main_bp.route('/admin/categories/<int:id>', methods=['POST'])
 @login_required
 def toggle_category(id):
-    category = Category.query.get_or_404(id)
-    category.is_active = not category.is_active
-    db.session.commit()
-    return jsonify({'status': 'success', 'is_active': category.is_active})
+    try:
+        category = Category.query.get_or_404(id)
+        category.is_active = not category.is_active
+        db.session.commit()
+        return jsonify({'status': 'success', 'is_active': category.is_active})
+    except Exception:
+        db.session.rollback()
+        return jsonify({'status': 'error'}), 500
