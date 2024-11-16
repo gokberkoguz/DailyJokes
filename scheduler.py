@@ -4,10 +4,14 @@ from email_service import send_daily_joke
 from datetime import datetime, timedelta
 from sqlalchemy import or_
 
-@scheduler.task('cron', id='send_daily_jokes', hour=9)
-def send_daily_jokes():
+def send_jokes_for_time(current_hour):
+    """Send jokes to subscribers who want delivery at the specified hour"""
     with scheduler.app.app_context():
-        subscribers = Subscriber.query.filter_by(is_active=True).all()
+        # Get subscribers who want delivery at this hour
+        subscribers = Subscriber.query.filter(
+            Subscriber.is_active == True,
+            extract('hour', Subscriber.delivery_time) == current_hour
+        ).all()
         
         for subscriber in subscribers:
             categories = subscriber.preferences.get('categories', ['general'])
@@ -25,3 +29,9 @@ def send_daily_jokes():
                 send_daily_joke(subscriber, joke)
                 joke.last_sent = datetime.utcnow()
                 db.session.commit()
+
+# Run every hour to check for subscribers who want delivery at that time
+@scheduler.task('cron', id='send_hourly_jokes', hour='*')
+def send_hourly_jokes():
+    current_hour = datetime.utcnow().hour
+    send_jokes_for_time(current_hour)

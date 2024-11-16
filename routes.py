@@ -17,9 +17,16 @@ def index():
 def subscribe():
     email = request.form.get('email')
     categories = request.form.getlist('categories')
+    delivery_time = request.form.get('delivery_time')
     
     if not email:
         flash('Email is required!', 'error')
+        return redirect(url_for('main.index'))
+    
+    try:
+        delivery_time = datetime.strptime(delivery_time, '%H:%M').time()
+    except ValueError:
+        flash('Invalid delivery time format!', 'error')
         return redirect(url_for('main.index'))
     
     existing = Subscriber.query.filter_by(email=email).first()
@@ -29,13 +36,15 @@ def subscribe():
         else:
             existing.is_active = True
             existing.preferences = {'categories': categories}
+            existing.delivery_time = delivery_time
             db.session.commit()
             flash('Welcome back! Your subscription has been reactivated.', 'success')
         return redirect(url_for('main.index'))
     
     subscriber = Subscriber(
         email=email,
-        preferences={'categories': categories or ['general']}
+        preferences={'categories': categories or ['general']},
+        delivery_time=delivery_time
     )
     db.session.add(subscriber)
     db.session.commit()

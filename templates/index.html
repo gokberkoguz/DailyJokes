@@ -17,14 +17,20 @@
                     </div>
 
                     <div class="mb-3">
+                        <label for="delivery_time" class="form-label">When would you like to receive your daily joke?</label>
+                        <input type="time" class="form-control" id="delivery_time" name="delivery_time" value="09:00" required>
+                        <small class="text-muted">All times are in UTC</small>
+                    </div>
+
+                    <div class="mb-3">
                         <p class="mb-2">Choose your joke categories:</p>
                         <div class="d-flex flex-wrap gap-2">
-                            {% for category in ['general', 'puns', 'dad_jokes', 'knock_knock'] %}
+                            {% for category in categories %}
                             <div>
-                                <input type="checkbox" class="category-checkbox" id="{{ category }}" name="categories" value="{{ category }}" 
-                                       {% if category == 'general' %}checked{% endif %}>
-                                <label class="category-label" for="{{ category }}">
-                                    {{ category.replace('_', ' ').title() }}
+                                <input type="checkbox" class="category-checkbox" id="{{ category.name }}" name="categories" value="{{ category.name }}" 
+                                       {% if category.name == 'general' %}checked{% endif %}>
+                                <label class="category-label" for="{{ category.name }}">
+                                    {{ category.name.replace('_', ' ').title() }}
                                 </label>
                             </div>
                             {% endfor %}
