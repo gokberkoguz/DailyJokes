@@ -220,7 +220,7 @@ def generate_ai_joke():
         logger.info(f"Attempting to generate joke for category: {category.name}")
         
         # Generate joke using OpenAI
-        generated_content = generate_bulk_jokes(category.name)
+        generated_content = generate_bulk_jokes(category.name, category.description)
         
         if generated_content:
             # Save the generated joke

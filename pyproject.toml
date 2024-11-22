@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "dailyjokes"
+version = "0.1.0"
+description = ""
+authors = ["gokberk <mgokberkoguz@gmail.com>"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.10"
+flask = "^3.0.0"
+flask-sqlalchemy = "^3.1.1"
+flask-login = "^0.6.3"
+flask-mail = "^0.9.1"
+flask-apscheduler = "^1.13.1"
+psycopg2-binary = "^2.9.9"
+openai = "^1.3.0"
+python-dotenv = "^1.0.0"
+tenacity = "^8.2.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
