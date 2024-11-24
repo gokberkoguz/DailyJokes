@@ -8,8 +8,7 @@ from datetime import datetime, timedelta
 from utils.ai_utils import generate_bulk_jokes
 from openai import OpenAIError, RateLimitError, APIError, APIConnectionError
 import logging
-import json
-from scheduler import send_minutely_jokes
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -305,11 +304,13 @@ def toggle_category(id):
         return jsonify({'status': 'error'}), 500
 
 
-@main_bp.route('/test', methods=['GET'])
-def trigger_task():
-    """Endpoint to manually trigger the task."""
-    try:
-        send_minutely_jokes()
-        return jsonify({"status": "Task executed successfully"})
-    except Exception as e:
-        return jsonify({"status": "Task execution failed", "error": str(e)}), 500
+# @main_bp.route('/test', methods=['GET'])
+# def trigger_task():
+#     """Endpoint to manually trigger the task."""
+#     try:
+#         print("sending joke")
+#         send_minutely_jokes()
+#         print("success")
+#         return jsonify({"status": "Task executed successfully"})
+#     except Exception as e:
+#         return jsonify({"status": "Task execution failed", "error": str(e)}), 500

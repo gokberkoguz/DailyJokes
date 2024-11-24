@@ -102,7 +102,6 @@ def generate_bulk_jokes(category,category_description, count=10):
         Additional guidelines:
         - Ensure the jokes are concise, witty, and formatted as a JSON list of strings.
         - Avoid generic or unrelated content and stick closely to the category description.
-        - Avoid any form of hate speech, explicit slurs, or offensive stereotypes.
         - Ensure the jokes remain in good taste for adults with a dark sense of humor, aligned with the provided category description.
 
         Return the output strictly as valid JSON. Example:
