@@ -1,5 +1,5 @@
 from app import db
-from models import Subscriber, Joke, Category
+from models import Subscriber, Joke, Category, JokeHistory
 from flask_apscheduler import APScheduler
 from email_service import send_daily_joke
 from datetime import datetime, timedelta
@@ -11,31 +11,51 @@ app = create_app()
 # Create and configure the scheduler
 scheduler = APScheduler()
 
+
 def send_jokes_for_time(current_hour, current_minute):
-    print("sending joke")
     """Send jokes to subscribers who want delivery at the specified hour"""
     with scheduler.app.app_context():
-        print("scheduler")
-        # Get subscribers who want delivery at this hour
+        # Get subscribers who want delivery at this time
         subscribers = Subscriber.query.filter(
             Subscriber.is_active == True,
             extract('hour', Subscriber.delivery_time) == current_hour,
             extract('minute', Subscriber.delivery_time) == current_minute
         ).all()
-        for subscriber in subscribers:
-            categories = subscriber.preferences.get('categories', ['test'])
-            # Get a joke that hasn't been sent recently
-            joke = Joke.query.join(Category).filter(
-                Category.name.in_(categories),  # Match category names
-                or_(
-                    Joke.last_sent == None,
-                    Joke.last_sent <= datetime.utcnow() - timedelta(days=7)
-                )
-            ).order_by(Joke.last_sent.nulls_first()).first()
 
-            if joke:
-                send_daily_joke(subscriber, joke)
-                joke.last_sent = datetime.utcnow()
+        for subscriber in subscribers:
+            categories = subscriber.preferences.get('categories', [])
+            if not categories:
+                continue
+
+            # Collect jokes for each category
+            jokes_to_send = []
+            for category_name in categories:
+                category = Category.query.filter_by(name=category_name, is_active=True).first()
+                if not category:
+                    continue
+
+                # Get a joke for the category that hasn't been sent recently
+                joke = Joke.query.filter(
+                    Joke.category_id == category.id,
+                    or_(
+                        Joke.last_sent == None,
+                        Joke.last_sent <= datetime.utcnow() - timedelta(days=7)
+                    )
+                ).order_by(Joke.last_sent.nulls_first()).first()
+
+                if joke:
+                    jokes_to_send.append(joke)
+
+            if jokes_to_send:
+                # Send jokes to the subscriber
+                send_daily_joke(subscriber, jokes_to_send)
+
+                # Log each joke sent and update `last_sent`
+                for joke in jokes_to_send:
+                    joke.last_sent = datetime.utcnow()
+                    log = JokeHistory(joke_id=joke.id, user=subscriber.id, sent_at=datetime.utcnow())
+                    db.session.add(log)
+
                 db.session.commit()
 
 
@@ -44,7 +64,7 @@ def send_jokes_for_time(current_hour, current_minute):
 def send_minutely_jokes():
     current_minute = datetime.utcnow().minute
     current_hour = datetime.utcnow().hour
-    send_jokes_for_time(current_hour,current_minute)
+    send_jokes_for_time(current_hour, current_minute)
     return "success"
 
 

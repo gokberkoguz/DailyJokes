@@ -39,3 +39,10 @@ class Joke(db.Model):
     times_sent = db.Column(db.Integer, default=0)
     
     category = db.relationship('Category', backref=db.backref('jokes', lazy=True))
+
+
+class JokeHistory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    joke_id = db.Column(db.Integer, db.ForeignKey('joke.id'), nullable=False)
+    sent_at = db.Column(db.DateTime, nullable=True)
+    user = db.Column(db.Integer, db.ForeignKey('subscriber.id'), nullable=False)

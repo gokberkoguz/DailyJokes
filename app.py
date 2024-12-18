@@ -53,7 +53,7 @@ def create_app():
         return Admin.query.get(int(user_id))
 
     with app.app_context():
-        from models import Admin, Subscriber, Joke
+        from models import Admin, Subscriber, Joke, JokeHistory
         db.create_all()
 
         # Create default admin if not exists

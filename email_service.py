@@ -13,14 +13,27 @@ def send_welcome_email(email):
                              email=email)
     mail.send(msg)
 
-def send_daily_joke(subscriber, joke):
+
+def send_daily_joke(subscriber, jokes):
+    """
+    Sends a daily joke email with multiple jokes to a subscriber.
+
+    Args:
+        subscriber: The Subscriber object.
+        jokes: A list of Joke objects, one from each subscribed category.
+    """
     msg = Message(
-        'Your Daily Joke is Here! 😂',
+        'Your Daily Dose of Laughter! 😂',
         recipients=[subscriber.email]
     )
-    msg.html = render_template('email/daily_joke.html',
-                             content=joke.content,
-                             is_welcome=False,
-                             email=subscriber.email,
-                             joke=joke)
+
+    # Render the email template with multiple jokes
+    msg.html = render_template(
+        'email/daily_joke.html',
+        jokes=jokes,
+        is_welcome=False,
+        email=subscriber.email
+    )
+
+    # Send the email
     mail.send(msg)

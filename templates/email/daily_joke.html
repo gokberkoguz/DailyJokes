@@ -16,6 +16,12 @@
             border-radius: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
+        .header {
+            text-align: center;
+        }
+        .header h1 {
+            color: #2d3436;
+        }
         .joke {
             font-size: 18px;
             line-height: 1.6;
@@ -24,6 +30,11 @@
             background-color: #f8f9fa;
             border-radius: 8px;
             margin: 20px 0;
+        }
+        .category {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #FF6B6B;
         }
         .rating {
             margin: 20px 0;
@@ -49,15 +60,19 @@
 </head>
 <body>
     <div class="container">
-        {% if is_welcome %}
-        <h1>Welcome to Daily Jokes! 🎉</h1>
-        <p>Get ready for your daily dose of laughter!</p>
-        {% else %}
-        <h1>Your Daily Joke is Here! 😄</h1>
-        {% endif %}
+        <div class="header">
+            {% if is_welcome %}
+            <h1>Welcome to Daily Jokes! 🎉</h1>
+            <p>Get ready for your daily dose of laughter!</p>
+            {% else %}
+            <h1>Your Daily Dose of Laughter is Here! 😄</h1>
+            {% endif %}
+        </div>
 
+        {% for joke in jokes %}
         <div class="joke">
-            {{ content }}
+            <div class="category">{{ joke.category.name }}</div>
+            <div class="content">{{ joke.content }}</div>
         </div>
 
         {% if not is_welcome %}
@@ -68,6 +83,7 @@
             {% endfor %}
         </div>
         {% endif %}
+        {% endfor %}
 
         <div class="footer">
             <p>
